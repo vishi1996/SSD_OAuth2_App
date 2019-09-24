@@ -10,12 +10,9 @@ Setup
 
 A latest version of **NodeJS** and **NPM**.
 
-#### <i class="icon-file"></i> Run the App
+#### <i class="icon-file"></i> Steps to run the App
 
-Clone this repository
-
-> **Steps:**
-
+> - Clone this repository
 > - Run `npm install`.
 > - Run `node index.js`.
 > - Open a web browser and navigate to http://localhost:3002/  
