@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>OAuth 2.0 application</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
+        integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+</head>
+
+<body class="text-center">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-8 offset-md-2">
+                <div class="jumbotron jumbotron-fluid"
+                    style="background-color: #4863A0; border: 2px solid #4863A0; color: white;  margin-top: 1rem;">
+                    <h1>View the latest 5 Files in GDrive</h1>
+                    <p style=" font-size: 1.25rem; font-weight: 300;">
+                        You can view the latest 5 files uploaded by or shared with you on Google Drive using OAuth 2.0.
+                    </p>
+                    <hr class="my-5" style="border: none;">
+                    <div class="text-center">
+                        <button class="btn btn-success btn-lg" id="signIn_btn" role="button">Sign In</button>
+                        <button class="btn btn-warning btn-lg" id="signOut_btn" role="button">Sign Out</button>
+                    </div>
+                    <p>Sign In using a Google account to get started.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- API results -->
+        <div class="row">
+            <div class="col-md-6 offset-md-3">
+                <h3 id="list-title">Latest 5 Files</h3>
+                <ul class="list-group" id="file-list"></ul>
+                <div class="alert alert-info" role="alert" id="loading-alert">
+                    <strong>Please Wait .. .. We are requesting data from Google! </strong>
+                </div>
+            </div>
+        </div>
+        <pre id="content"></pre>
+
+    </div>
+
+    <script type="text/javascript">
+        // generated Client ID and API key from the google developer console
+        var CLIENT_ID = '154785502512-ar7ghl73i4teiu2lvfdk0ek37l2hblu0.apps.googleusercontent.com';
+        var API_KEY = 'AIzaSyBMBmIwsQ8rrJcgif7jk_Tb1EP6iW0itjg';
+
+        var DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"];
+
+        // Authorization scopes required by the API
+        var SCOPES = 'https://www.googleapis.com/auth/drive.metadata.readonly';
+
+        var signInBtn = document.getElementById('signIn_btn');
+        var signOutBtn = document.getElementById('signOut_btn');
+
+        /**
+         *  On load, called to load the auth2 library and API client library.
+         */
+        function handleClientLoad() {
+            gapi.load('client:auth2', initializeClient);
+        }
+
+        /**
+         *  Initializes the API client library and sets up listeners for sign-in state
+         */
+        function initializeClient() {
+            $("#loading-alert").hide();
+            $("#list-title").hide();
+            signOutBtn.style.display = 'none';
+
+            gapi.client.init({
+                apiKey: API_KEY,
+                clientId: CLIENT_ID,
+                discoveryDocs: DISCOVERY_DOCS,
+                scope: SCOPES
+            }).then(function () {
+
+                gapi.auth2.getAuthInstance().isSignedIn.listen(updateStatus);
+
+                updateStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
+                signInBtn.onclick = handleSignInClick;
+                signOutBtn.onclick = handleSignOutClick;
+            });
+        }
+
+        /**
+         *  Update the UI when the signed in status changed.
+         */
+        function updateStatus(isSignedIn) {
+            if (isSignedIn) {
+                signInBtn.style.display = 'none';
+                signOutBtn.style.display = 'inline-block';
+                listFiles();
+            } else {
+                signInBtn.style.display = 'inline-block';
+                signOutBtn.style.display = 'none';
+            }
+        }
+
+        /**
+         *  Sign in click event.
+         */
+        function handleSignInClick(event) {
+            gapi.auth2.getAuthInstance().signIn();
+        }
+
+        /**
+         *  Sign out click event.
+         */
+        function handleSignOutClick(event) {
+            //empty results
+            $("#file-list").empty();
+            gapi.auth2.getAuthInstance().signOut();
+        }
+
+        /**
+         * Append a pre element to the body to display the results of the API call.
+         */
+        function appendPre(message) {
+            var pre = document.getElementById('content');
+            var textContent = document.createTextNode(message + '\n');
+
+            $("#file-list").append(
+                "<li class='list-group-item' style='background-color: #28a745; color: white; font-weight: 500'>" + message + "</li>"
+            );
+        }
+
+        /**
+         * Print files.
+         */
+        function listFiles() {
+            $("#loading-alert").show();
+            $("#list-title").show();
+
+            gapi.client.drive.files.list({
+                'pageSize': 5,
+                'fields': "nextPageToken, files(id, name)"
+            }).then(function (response) {
+                $("#loading-alert").hide();
+
+                var fileList = response.result.files;
+                if (fileList && fileList.length > 0) {
+                    for (var i = 0; i < fileList.length; i++) {
+                        var file = fileList[i];
+                        appendPre(file.name);
+                    }
+                } else {
+                    appendPre('No files found.');
+                }
+            });
+        }
+    </script>
+
+    <script async defer src="https://apis.google.com/js/api.js" onload="this.onload=function(){};handleClientLoad()"
+        onreadystatechange="if (this.readyState === 'complete') this.onload()">
+        </script>
+</body>
+
+</html>
